@@ -1,7 +1,6 @@
 ---
 title: "Limpieza_y_analisis_de_datos"
 author: "Eleazar Morales Diaz"
-author: "Susana Vila Melero"
 date: "5/6/2021"
 output: html_document
 ---
@@ -19,5 +18,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 ds <- read.csv("./data/titanic.csv", header=TRUE, fileEncoding="UTF-8")
+summary(ds)
 ```
 
