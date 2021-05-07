@@ -1,6 +1,7 @@
 ---
-title: "Limpieza_y_analisis_de_datos"
-author: "Eleazar Morales Diaz"
+title: 'Tipología y ciclo de vida de los datos'
+subtitle: 'PRÁCTICA 2: Limpieza y análisis de datos'
+author: "Autores: Eleazar Morales Díaz y Susana Vila Melero"
 date: "5/6/2021"
 output: html_document
 ---
@@ -9,15 +10,82 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# 1. Descripción del dataset.
+## 1. Descripción del dataset.
 
 ¿Qué grupo tiene mayor probabilidad de sobrevivir?
 ¿Hay relación entre categoría del billete y el pais o puerto de embarque?
 
-# 2. Integración y selección de los datos de interés a analizar.
+Hemos elegido como dataset para realizar nuestra práctica el dataset de "Titanic", ya que nos permite realizar tareas predictivas sobre la variable **Survived**. En esa línea nuestro objetivo será analizar qué subconjunto de personas tendría mayor probabilidad de sobrevivir en el Titanic, a partir de los datos contenidos en el conjunto de datos. Estudiaremos también qué relación hay entre la categoría del billete y el país/puerto de embarque.
+
+El dataset consta de 2.207 registros y 11 variables que se describen a continuación:
+
+* **name**: nombre del pasajero (string).
+* **gender**: información respecto al género del pasajero (factor con dos niveles).
+* **age**: la edad del pasajero el día del naufragio. La edad de los bebés( menores de 12 meses) se proporciona como una fracción de un año (valor numérico).
+* **class**: la clase para los pasajeros o el tipo de servicio para los miembros de la tripulación (factor).
+* **embarked**: lugar de embarque del pasajero (factor).
+* **country**: lugar de procedencia del pasajero (factor).
+* **ticketno**: número de pasaje de los pasajeros, NA en el caso de ser miembros de la tripulación (valor numérico).
+* **fare**: Precio del pasaje, NA para miembros de la tripulación, músicos y empleados de la compañía naviera (valor numérico).
+* **sibsp**: número de esposas/hermanos a bordo, tomado del dataset Vanderbild (factor ordenado).
+* **parch**: número de padres/hijos a bordo, tomado del dataset Vanderbild (factor ordenado).
+* **survived**: información respecto a si el pasajero sobrevivió o no al naufragio (factor con dos niveles).
+
+
+## 2. Integración y selección de los datos de interés a analizar.
+
+El primer paso será cargar las librerias y el dataset con el que vamos a trabajar.Una vez cargado, analizaremos su estructura y el tipo de variable y lo adecuaremos a nuestro estudio.
 
 ```{r}
+# Cargamos las librerías
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+library(scales)
+theme_set(theme_bw())
+
+# Cargamos el dataset
 ds <- read.csv("./data/titanic.csv", header=TRUE, fileEncoding="UTF-8")
+
+#Hacemos una primera inspección
+str(ds)
 summary(ds)
+
+#Convertimos las variables carácter a variables factor
+ds$gender = as.factor(ds$gender)
+ds$class = as.factor(ds$class)
+ds$embarked = as.factor(ds$embarked)
+ds$country = as.factor(ds$country)
+ds$sibsp = as.factor(ds$sibsp)
+ds$parch = as.factor(ds$parch)
+ds$survived = as.factor(ds$survived)
+str(ds)
+```
+
+Ya tenemos el dataset cargado y con las variables transformadas para poder trabajar con él. A continuación elegiremos qué datos utilizaremos, qué datos eliminaremos y si es necesario crear nuevas variables.
+
+Empezaremos eliminando las variables **name** y **ticketno** ya que no aportan información de interés. En el caso de **ticketno**, podría dar información respecto a si el sujeto es pasajero o miembro de la tripulación, pero el mismo dato se puede obtener de la variable **fare** que sí es de interés para nuestro análisis.
+```{r}
+ds = select(ds, -name, -ticketno)
+str(ds)
+```
+
+A continuación, generaremos una nueva variable que se corresponde a la edad discretizada.
+```{r}
+#Edad discretizada con un método simple de intervalos de igual amplitud.
+summary(ds[,"age"])
+ds["ageD"] <- cut(ds$age, breaks = c(0,10,20,30,40,50,60,70,100), labels = c("0-9", "10-19", "20-29", "30-39","40-49","50-59","60-69","70-79"))
+table(ds$ageD)
+g1 <- ggplot(ds, aes(x = age, fill=gender))+ geom_bar()+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Age Continua")
+g2 <- ggplot(ds, aes(x = ageD, fill=gender)) + geom_bar()+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Age Discreta")
+gridExtra::grid.arrange(g1, g2, ncol=1)
+```
+
+Por último, generaremos otra nueva variable que nos dirá si el sujeto es miembro de la tripulación o pasajero.
+```{r}
+#Nueva variable para identificar pasajeros y miembros de la tripulación
+ds$status = ds$fare
+ds$status[is.na(ds$status)] <- "Tripulación"
+ds$status[ds$status != "Tripulación"] <- "Pasajero"
 ```
 
