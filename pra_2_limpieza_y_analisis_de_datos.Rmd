@@ -62,30 +62,92 @@ ds$survived = as.factor(ds$survived)
 str(ds)
 ```
 
-Ya tenemos el dataset cargado y con las variables transformadas para poder trabajar con él. A continuación elegiremos qué datos utilizaremos, qué datos eliminaremos y si es necesario crear nuevas variables.
+Ya tenemos el dataset cargado y con las variables transformadas para poder trabajar con él. 
 
-Empezaremos eliminando las variables **name** y **ticketno** ya que no aportan información de interés. En el caso de **ticketno**, podría dar información respecto a si el sujeto es pasajero o miembro de la tripulación, pero el mismo dato se puede obtener de la variable **fare** que sí es de interés para nuestro análisis.
+## 3. Limpieza de datos
+
+### 3.1. Identificación y tratamiento de ceros o elementos vacíos.
+### 3.2. Identificación y tratamiento de ceros o elementos vacíos.
+
+## 4. Análisis de los datos.
+
+### 4.1. Selección de los grupos de datos que se quieren comparar/analizar.
+
+A continuación elegiremos qué datos utilizaremos, qué datos eliminaremos y si es necesario crear nuevas variables para llevar a cabo nuestro análisis.
+
+#### 4.1.1. Eliminación de variables.
+
+Descartaremos de nuestro dataset las variables **name** y **ticketno** ya que no aportan información de interés. En el caso de **ticketno**, podría dar información respecto a si el sujeto es pasajero o miembro de la tripulación, pero el mismo dato se puede obtener de la variable **fare** que sí es de interés para nuestro análisis.
 ```{r}
 ds = select(ds, -name, -ticketno)
 str(ds)
 ```
 
-A continuación, generaremos una nueva variable que se corresponde a la edad discretizada.
+#### 4.1.2. Generación de nuevas variables.
+
+Generaremos una nueva variable que se corresponde a la **edad discretizada**.
 ```{r}
 #Edad discretizada con un método simple de intervalos de igual amplitud.
 summary(ds[,"age"])
-ds["ageD"] <- cut(ds$age, breaks = c(0,10,20,30,40,50,60,70,100), labels = c("0-9", "10-19", "20-29", "30-39","40-49","50-59","60-69","70-79"))
-table(ds$ageD)
-g1 <- ggplot(ds, aes(x = age, fill=gender))+ geom_bar()+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Age Continua")
-g2 <- ggplot(ds, aes(x = ageD, fill=gender)) + geom_bar()+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Age Discreta")
+ds["ageD"] = cut(ds$age, breaks = c(0,10,20,30,40,50,60,70,100), labels = c("0-9", "10-19", "20-29", "30-39","40-49","50-59","60-69","70-79"))
+g1 <- ggplot(ds, aes(x = age, fill=survived))+geom_bar(width=0.5)+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Age Continua")+ylab("Número")
+g2 = ggplot(ds, aes(x = ageD, fill=survived)) + geom_bar()+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Age Discreta")+ylab("Número")
 gridExtra::grid.arrange(g1, g2, ncol=1)
 ```
 
-Por último, generaremos otra nueva variable que nos dirá si el sujeto es miembro de la tripulación o pasajero.
+
+A continuación crearemos una variable que nos dirá si el sujeto es **miembro de la tripulación o pasajero**.
 ```{r}
 #Nueva variable para identificar pasajeros y miembros de la tripulación
 ds$status = ds$fare
-ds$status[is.na(ds$status)] <- "Tripulación"
-ds$status[ds$status != "Tripulación"] <- "Pasajero"
+ds$status[is.na(ds$status)] = 0
+ds$status[ds$status != 0] = 1
+g3 = ggplot(ds, aes(x = status, fill=survived))+ geom_bar()+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Tripulación/Pasajero")+ylab("Número")
+g3
 ```
+
+Por último, generaremos una variable que nos indicará el tamaño de la familia de cada sujeto.
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+#Nueva variable para calcular el tamaño de la familia entre los pasajeros
+ds$sibspN = as.numeric(ds$sibsp)
+ds$parchN = as.numeric(ds$parch)
+ds$family = ds$sibspN + ds$parchN +1
+ds = select(ds, -sibspN, -parchN)
+g4 = ggplot(ds,aes(x=family,fill=survived))+geom_bar()+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Miembros de la familia")+ylab("Número")
+g4
+  
+```
+
+#### 4.1.3. Selección del grupo de datos para el análisis.
+
+Una vez tenemos el dataset con las variables que necesitamos, seleccionaremos los grupos de datos que puede ser interesante analizar:
+
+
+
+* Pasajeros que hayan sobrevivido en función de la edad: **survived** y **age**/**ageD**
+* Pasajeros que hayan sobrevivido en función del genero: **survived** y **genre**
+* Pasajeros que hayan sobrevivido en función del puerto de embarque: **survived** y **embarked**
+* Pasajeros que hayan sobrevivido en función del país de origen: **survived** y **country**
+* Pasajeros que hayan sobrevivido en función de la clase: **survived** y **class**
+* Pasajeros que hayan sobrevivido en función del tamaño de la familia con la que viajaban: **Survived** y **family**
+* Categoría del billete en función del puerto de embarque: **class** y **embarked**
+* Categoría del billete en función del país de origen: **class** y **country**
+Con los datos anteriores, al llevar a cabo el análisis se verá si resulta de interés hacer alguna combinación de las variables anteriores
+
+### 4.2. Comprobación de la normalidad y homogeneidad de la varianza.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
