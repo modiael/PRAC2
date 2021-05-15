@@ -42,6 +42,7 @@ library(ggplot2)
 library(dplyr)
 library(RColorBrewer)
 library(scales)
+library(stats)
 theme_set(theme_bw())
 
 # Cargamos el dataset
@@ -67,7 +68,7 @@ Ya tenemos el dataset cargado y con las variables transformadas para poder traba
 ## 3. Limpieza de datos
 
 ### 3.1. Identificación y tratamiento de ceros o elementos vacíos.
-### 3.2. Identificación y tratamiento de ceros o elementos vacíos.
+### 3.2. Identificación y tratamiento de valores extremos.
 
 ## 4. Análisis de los datos.
 
@@ -136,18 +137,50 @@ Con los datos anteriores, al llevar a cabo el análisis se verá si resulta de i
 
 ### 4.2. Comprobación de la normalidad y homogeneidad de la varianza.
 
+A la hora de realizar un análisis de normalidad y homgeneidad de la varianza, empezaremos con un análisis descriptivo de los datos:
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+summary(ds)
+```
+
+A partir de los datos obtenidos, podemos calcular la normalidad de los cuatro atributos numéricos: **age**, **fare**, **status** y **family**. Para ello utilizaremos el test de Saphiro-Wilk:
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(ds$age)
+shapiro.test(ds$fare)
+shapiro.test(ds$status)
+shapiro.test(ds$family)
+```
+
+A continuación se analiza el valor de p. En el caso de que sea mayor que el nivel de significancia, se acepta la hipótesis nula y se concluye que la variable tiene una distribución normal.
+En nuestro caso XXX
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ 
+plotn <- function(x,main="Histograma de frecuencias \ny distribución normal", xlab="X", ylab="Densidad") {
+            min <- min(x)
+            max <- max(x)
+            media <- mean(x)
+            dt <- sd(x)
+            hist(x,freq=F,main=main,xlab=xlab,ylab=ylab)
+            curve(dnorm(x,media,dt), min, max,add = T,col="blue")}
+
+#plotn(ds$age)
+#plotn(ds$fare)
+#plotn(ds$status)
+#plotn(ds$family)
+
+```
 
 
 
-
-
-
-
-
-
-
-
-
+Seguidamente, pasamos a estudiar la homogeneidad de varianzas mediante la aplicación de un test de Fligner-Killeen. En este caso, estudiaremos la homogeneidad de las cuatro variables anteriormente mencionadas respecto a la variable survived.
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ds$survived = as.numeric(ds$survived)
+fligner.test(survived ~ age, data = ds)
+fligner.test(survived ~ fare, data = ds)
+fligner.test(survived ~ status, data = ds)
+fligner.test(survived ~ family, data = ds)
+```
+En el siguiente test, la hipótesis nula consiste en que ambas varianzas son iguales. Por lo tanto en nuestro caso XXX
 
 
 
