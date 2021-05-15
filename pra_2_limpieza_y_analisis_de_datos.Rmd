@@ -103,6 +103,7 @@ A continuación crearemos una variable que nos dirá si el sujeto es **miembro d
 ds$status = ds$fare
 ds$status[is.na(ds$status)] = 0
 ds$status[ds$status != 0] = 1
+ds$status = as.factor(ds$status)
 g3 = ggplot(ds, aes(x = status, fill=survived))+ geom_bar()+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Tripulación/Pasajero")+ylab("Número")
 g3
 ```
@@ -142,11 +143,10 @@ A la hora de realizar un análisis de normalidad y homgeneidad de la varianza, e
 summary(ds)
 ```
 
-A partir de los datos obtenidos, podemos calcular la normalidad de los cuatro atributos numéricos: **age**, **fare**, **status** y **family**. Para ello utilizaremos el test de Saphiro-Wilk:
+A partir de los datos obtenidos, podemos calcular la normalidad de los tres atributos numéricos: **age**, **fare**, y **family**. Para ello utilizaremos el test de Saphiro-Wilk:
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 shapiro.test(ds$age)
 shapiro.test(ds$fare)
-shapiro.test(ds$status)
 shapiro.test(ds$family)
 ```
 
@@ -154,33 +154,21 @@ A continuación se analiza el valor de p. En el caso de que sea mayor que el niv
 En nuestro caso XXX
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
- 
-plotn <- function(x,main="Histograma de frecuencias \ny distribución normal", xlab="X", ylab="Densidad") {
-            min <- min(x)
-            max <- max(x)
-            media <- mean(x)
-            dt <- sd(x)
-            hist(x,freq=F,main=main,xlab=xlab,ylab=ylab)
-            curve(dnorm(x,media,dt), min, max,add = T,col="blue")}
-
-#plotn(ds$age)
-#plotn(ds$fare)
-#plotn(ds$status)
-#plotn(ds$family)
-
+qqnorm(ds$age);qqline(ds$age, col = 2)
+qqnorm(ds$fare);qqline(ds$fare, col = 2)
+qqnorm(ds$family);qqline(ds$family, col = 2)
 ```
 
 
 
-Seguidamente, pasamos a estudiar la homogeneidad de varianzas mediante la aplicación de un test de Fligner-Killeen. En este caso, estudiaremos la homogeneidad de las cuatro variables anteriormente mencionadas respecto a la variable survived.
+Seguidamente, pasamos a estudiar la homogeneidad de varianzas mediante la aplicación de un test de Fligner-Killeen. En este caso, estudiaremos la homogeneidad de las cuatro variables anteriormente mencionadas respecto a la variable survived. En nuestro test, la hipótesis nula consiste en que ambas varianzas son iguales. 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-ds$survived = as.numeric(ds$survived)
-fligner.test(survived ~ age, data = ds)
-fligner.test(survived ~ fare, data = ds)
-fligner.test(survived ~ status, data = ds)
-fligner.test(survived ~ family, data = ds)
+fligner.test(age ~ survived, data = ds)
+fligner.test(fare ~ survived, data = ds)
+fligner.test(family ~ survived, data = ds)
 ```
-En el siguiente test, la hipótesis nula consiste en que ambas varianzas son iguales. Por lo tanto en nuestro caso XXX
 
+Una vez ejecutados los test, podemos aceptar la hipótesis nula en aquellos casos en los que el valor de p sea mayor que el valor de significancia (0,05). 
+Por lo tanto, para la variable **age**, con p-valor>0,05 diremos con un 95% de confianza que su varianza es la misma tanto para los supervivientes como para los que no. Siguiendo el mismo razonamiento, para **fare** y **family**, con p-valor<=0,05, afirmaremos que las varianzas de estas variables son diferentes para los dos grupos de la variable "survived".
 
 
