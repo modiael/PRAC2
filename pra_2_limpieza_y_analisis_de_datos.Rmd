@@ -56,7 +56,7 @@ summary(ds)
 ds$gender = as.factor(ds$gender)
 ds$class = as.factor(ds$class)
 ds$embarked = as.factor(ds$embarked)
-ds$country = as.factor(ds$country)
+# ds$country = as.factor(ds$country) # Possee NAs que vamos a imputar, por lo tanto realizamos el factor después de tratar sus valores.
 ds$sibsp = as.factor(ds$sibsp)
 ds$parch = as.factor(ds$parch)
 ds$survived = as.factor(ds$survived)
@@ -68,6 +68,52 @@ Ya tenemos el dataset cargado y con las variables transformadas para poder traba
 ## 3. Limpieza de datos
 
 ### 3.1. Identificación y tratamiento de ceros o elementos vacíos.
+
+Vamos a contar el total de **NAs** de nuestro dataset.
+
+```{r}
+sum(is.na(ds))
+```
+
+Pero ¿cuál es el desglose de estos valores ausentes por variable?
+
+```{r}
+colSums(is.na(ds))
+```
+
+Esta información también la podemos obtener mediante `summary()`. El comando `summary(ds)` aplicado a nuestro dataset nos informa de que tenemos valores **NA** en las variables `age` (2 valores), `country` (81 valores), `ticketno` (891 valores), `fare` (916 valores), `sibsp` (900 valores) y `parch` (900 valores). Para cada una de las variables será necesario detectar dichos valores ausentes y la toma de una medida para o bien sustituir el registro, omitirlo, o marcarlo como ausente en el conjunto de alguna forma. Este procedimiento se le conoce habitualmente como **imputación de valores**.
+
+Como en edad sólo tenemos 2 valores ausentes, sustituir por el valor de la media.
+```{r}
+index_is_na_age <- which(is.na(ds$age))
+
+ds[c(index_is_na_age),]
+```
+Se observa que los dos registros son de Bulgaria, así que tiene más sentido aplicar la media de edad  de las personas cuyo `country` sea el mismo.
+
+```{r}
+which(ds$country=='Bulgaria') # para detectar todos aquellos que sean de Bulgaria
+
+as.integer(mean(ds[c(which( ds$country=='Bulgaria' )) , 'age'], na.rm = TRUE)) # media de los de Bulgaria
+```
+
+Realizamos la sustitución
+```{r}
+ds[c(index_is_na_age),]$age <- as.integer(mean(ds[c(which( ds$country=='Bulgaria' )) , 'age'], na.rm = TRUE))
+
+ds[c(index_is_na_age),]
+```
+Para la variable **country**, lugar de procedencia del pasajero se procede a sustituir los NAs por el valor **UNKNOWN**.
+```{r}
+ds[c(which(is.na(ds$country))),]$country <- "UNKNOWN"
+ds$country = as.factor(ds$country) # convertimos a factor
+```
+
+Revisamos que hemos sustituido adecuadamente las variables `age` y `country`.
+```{r}
+colSums(is.na(ds))
+```
+
 ### 3.2. Identificación y tratamiento de valores extremos.
 
 ## 4. Análisis de los datos.
@@ -170,5 +216,4 @@ fligner.test(family ~ survived, data = ds)
 
 Una vez ejecutados los test, podemos aceptar la hipótesis nula en aquellos casos en los que el valor de p sea mayor que el valor de significancia (0,05). 
 Por lo tanto, para la variable **age**, con p-valor>0,05 diremos con un 95% de confianza que su varianza es la misma tanto para los supervivientes como para los que no. Siguiendo el mismo razonamiento, para **fare** y **family**, con p-valor<=0,05, afirmaremos que las varianzas de estas variables son diferentes para los dos grupos de la variable "survived".
-
 
