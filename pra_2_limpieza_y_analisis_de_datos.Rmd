@@ -57,8 +57,8 @@ ds$gender = as.factor(ds$gender)
 ds$class = as.factor(ds$class)
 ds$embarked = as.factor(ds$embarked)
 # ds$country = as.factor(ds$country) # Possee NAs que vamos a imputar, por lo tanto realizamos el factor después de tratar sus valores.
-ds$sibsp = as.factor(ds$sibsp)
-ds$parch = as.factor(ds$parch)
+# ds$sibsp = as.factor(ds$sibsp)
+# ds$parch = as.factor(ds$parch)
 ds$survived = as.factor(ds$survived)
 str(ds)
 ```
@@ -103,9 +103,15 @@ ds[c(index_is_na_age),]$age <- as.integer(mean(ds[c(which( ds$country=='Bulgaria
 
 ds[c(index_is_na_age),]
 ```
-Para la variable **country**, lugar de procedencia del pasajero se procede a sustituir los NAs por el valor **UNKNOWN**.
+Para la variable **country**, lugar de procedencia del pasajero se procede a sustituir los NAs por el valor que más se repite en el dataset, de esa forma reducimos el error.
+
 ```{r}
-ds[c(which(is.na(ds$country))),]$country <- "UNKNOWN"
+names(sort(table(ds$country), decreasing = TRUE))[1]
+```
+
+
+```{r}
+ds[c(which(is.na(ds$country))),]$country <- "England"
 ds$country = as.factor(ds$country) # convertimos a factor
 ```
 
@@ -114,7 +120,69 @@ Revisamos que hemos sustituido adecuadamente las variables `age` y `country`.
 colSums(is.na(ds))
 ```
 
+Como vemos las variables `ticketno`, `fare`, `sibsp`, `parch` quedan por tratar. No hemos encontrado interés alguno en la variable `ticketno`.
+
+En el caso concreto de la variable `fare`, la cual indica el precio del pasaje, se destaca que el valor es NA para miembros de la tripulación, músicos y empleados de la compañía naviera (valor numérico).
+
+Tanto para la variable `sibsp` (número de esposas/hermanos a bordo) como para la variable `parch` (número de padres/hijos a bordo) lo que si se hará es sustituir los valores NA por el valor de la media en cada variable.
+
+```{r}
+index_is_outlier_sibsp <- which(is.na(ds$sibsp))
+ds[c(index_is_outlier_parch), 'sibsp'] <- as.integer(mean(na.omit(ds$sibsp)))
+```
+
+```{r}
+index_is_outlier_parch <- which(is.na(ds$parch))
+ds[c(index_is_outlier_parch), 'parch'] <- as.integer(mean(na.omit(ds$parch)))
+```
+
+Revisamos que hemos sustituido adecuadamente las variables `sibsp` y `parch`.
+```{r}
+colSums(is.na(ds))
+```
+
 ### 3.2. Identificación y tratamiento de valores extremos.
+
+Procedemos a visualizar mediante un diagrama de cajas algunas variables numéricas para detectar posibles outliers.
+
+#### 3.2.1 Age
+```{r}
+boxplot(ds$age, ylab="AGE")
+sort(boxplot.stats(ds$age)$out)
+```
+
+Tras ver los datos, parecen edades con sentido. Observamos que el valor máximo es 74 y el mínimo 63 para aquellos valores que sobresalen en la distribución de la población.
+
+#### 3.2.2 Fare
+```{r}
+boxplot(ds$fare, ylab="FARE")
+```
+
+Para la variable `fare` si encontramos valores realmente extremos. Vemos que al tratarse de un primer viaje no todos los pasajeros pagaron lo mismo. De hecho el salto con respecto a la media es significativo. Estos valores extremos es interesante conservarlos pues destaca la jerarquía social de la persona a bordo y seguramente nos sea interesante de cara a saber quienes sobrevivieron.
+
+Con esta tabla podemos ver cuantas personas pagaron cada cantidad de dinero.
+
+```{r}
+table(sort(boxplot.stats(ds$fare)$out))
+```
+
+#### 3.2.3 Sibsp
+```{r}
+boxplot(ds$sibsp, ylab="SIBSP")
+table(sort(boxplot.stats(ds$sibsp)$out))
+```
+Recordemos, la variable `sibsp` indica número de esposas/hermanos a bordo. Por lo tanto si encontramos el valor **3** deberíamos encontrar valores múltiplos de 4 en el dataset.
+Contando manualmente mi razonamiento parece cierto en los grupos de **3** hermanos, de **5** y de **8**. Sin embargo para **4** falla. Así que puede ser un error, o puede ser que fueran 3 hermanos + 1 pareja. Y cuando le preguntasen a dicha pareja respondiese con 1. 
+
+Deducimos que la mayoría de pasajeros del titanic no viajaban ni con hermanos ni con parejas.
+
+#### 3.2.4 Parch
+```{r}
+boxplot(ds$parch, ylab="PARCH")
+table(sort(boxplot.stats(ds$parch)$out))
+```
+En el caso de la variable `parch` es el número de padres/hijos a bordo. Tampoco vamos a eliminar los outliers pues parecen tener sentido. Observamos que la mayoría de pasajeros del Titanic no tenían ni padres ni hijos a bordo.
+
 
 ## 4. Análisis de los datos.
 
