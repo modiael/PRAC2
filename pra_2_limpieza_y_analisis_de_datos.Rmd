@@ -56,9 +56,6 @@ summary(ds)
 ds$gender = as.factor(ds$gender)
 ds$class = as.factor(ds$class)
 ds$embarked = as.factor(ds$embarked)
-# ds$country = as.factor(ds$country) # Possee NAs que vamos a imputar, por lo tanto realizamos el factor después de tratar sus valores.
-# ds$sibsp = as.factor(ds$sibsp)
-# ds$parch = as.factor(ds$parch)
 ds$survived = as.factor(ds$survived)
 str(ds)
 ```
@@ -139,6 +136,12 @@ ds[c(index_is_outlier_parch), 'parch'] <- as.integer(mean(na.omit(ds$parch)))
 Revisamos que hemos sustituido adecuadamente las variables `sibsp` y `parch`.
 ```{r}
 colSums(is.na(ds))
+```
+
+Como ultimo paso convertimos a factor.
+```{r}
+ds$sibsp = as.factor(ds$sibsp)
+ds$parch = as.factor(ds$parch)
 ```
 
 ### 3.2. Identificación y tratamiento de valores extremos.
