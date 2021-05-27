@@ -125,7 +125,7 @@ Tanto para la variable `sibsp` (número de esposas/hermanos a bordo) como para l
 
 ```{r}
 index_is_outlier_sibsp <- which(is.na(ds$sibsp))
-ds[c(index_is_outlier_parch), 'sibsp'] <- as.integer(mean(na.omit(ds$sibsp)))
+ds[c(index_is_outlier_sibsp), 'sibsp'] <- as.integer(mean(na.omit(ds$sibsp)))
 ```
 
 ```{r}
@@ -171,7 +171,7 @@ table(sort(boxplot.stats(ds$fare)$out))
 
 #### 3.2.3 Sibsp
 ```{r}
-boxplot(ds$sibsp, ylab="SIBSP")
+#boxplot(ds$sibsp, ylab="SIBSP")
 table(sort(boxplot.stats(ds$sibsp)$out))
 ```
 Recordemos, la variable `sibsp` indica número de esposas/hermanos a bordo. Por lo tanto si encontramos el valor **3** deberíamos encontrar valores múltiplos de 4 en el dataset.
@@ -181,7 +181,7 @@ Deducimos que la mayoría de pasajeros del titanic no viajaban ni con hermanos n
 
 #### 3.2.4 Parch
 ```{r}
-boxplot(ds$parch, ylab="PARCH")
+#boxplot(ds$parch, ylab="PARCH")
 table(sort(boxplot.stats(ds$parch)$out))
 ```
 En el caso de la variable `parch` es el número de padres/hijos a bordo. Tampoco vamos a eliminar los outliers pues parecen tener sentido. Observamos que la mayoría de pasajeros del Titanic no tenían ni padres ni hijos a bordo.
@@ -268,14 +268,12 @@ shapiro.test(ds$family)
 ```
 
 A continuación se analiza el valor de p. En el caso de que sea mayor que el nivel de significancia, se acepta la hipótesis nula y se concluye que la variable tiene una distribución normal.
-En nuestro caso XXX
-
+En nuestro caso todas las variables analizadas presentan valores inferiores al nivel de signficancia, por lo que podemos concluir con un 95% de confianza que no presentan una distribución normal. Veámoslo a continuación de forma gráfica:
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 qqnorm(ds$age);qqline(ds$age, col = 2)
 qqnorm(ds$fare);qqline(ds$fare, col = 2)
 qqnorm(ds$family);qqline(ds$family, col = 2)
 ```
-
 
 
 Seguidamente, pasamos a estudiar la homogeneidad de varianzas mediante la aplicación de un test de Fligner-Killeen. En este caso, estudiaremos la homogeneidad de las cuatro variables anteriormente mencionadas respecto a la variable survived. En nuestro test, la hipótesis nula consiste en que ambas varianzas son iguales. 
@@ -288,6 +286,5 @@ fligner.test(family ~ survived, data = ds)
 Una vez ejecutados los test, podemos aceptar la hipótesis nula en aquellos casos en los que el valor de p sea mayor que el valor de significancia (0,05). 
 Por lo tanto, para la variable **age**, con p-valor>0,05 diremos con un 95% de confianza que su varianza es la misma tanto para los supervivientes como para los que no. Siguiendo el mismo razonamiento, para **fare** y **family**, con p-valor<=0,05, afirmaremos que las varianzas de estas variables son diferentes para los dos grupos de la variable "survived".
 
-### 4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis, correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis
-diferentes.
+### 4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos.
 
