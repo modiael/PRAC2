@@ -1,9 +1,11 @@
 ---
-title: 'Tipología y ciclo de vida de los datos'
-subtitle: 'PRÁCTICA 2: Limpieza y análisis de datos'
-author: "Autores: Eleazar Morales Díaz y Susana Vila Melero"
+title: "Tipología y ciclo de vida de los datos"
+author: 'Autores: Eleazar Morales Díaz y Susana Vila Melero'
 date: "5/6/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
+subtitle: 'PRÁCTICA 2: Limpieza y análisis de datos'
 ---
 
 ```{r setup, include=FALSE}
@@ -123,12 +125,12 @@ En el caso concreto de la variable `fare`, la cual indica el precio del pasaje, 
 
 Tanto para la variable `sibsp` (número de esposas/hermanos a bordo) como para la variable `parch` (número de padres/hijos a bordo) lo que si se hará es sustituir los valores NA por el valor de la media en cada variable.
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 index_is_outlier_sibsp <- which(is.na(ds$sibsp))
 ds[c(index_is_outlier_sibsp), 'sibsp'] <- as.integer(mean(na.omit(ds$sibsp)))
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 index_is_outlier_parch <- which(is.na(ds$parch))
 ds[c(index_is_outlier_parch), 'parch'] <- as.integer(mean(na.omit(ds$parch)))
 ```
@@ -136,12 +138,6 @@ ds[c(index_is_outlier_parch), 'parch'] <- as.integer(mean(na.omit(ds$parch)))
 Revisamos que hemos sustituido adecuadamente las variables `sibsp` y `parch`.
 ```{r}
 colSums(is.na(ds))
-```
-
-Como ultimo paso convertimos a factor.
-```{r}
-ds$sibsp = as.factor(ds$sibsp)
-ds$parch = as.factor(ds$parch)
 ```
 
 ### 3.2. Identificación y tratamiento de valores extremos.
@@ -288,3 +284,76 @@ Por lo tanto, para la variable **age**, con p-valor>0,05 diremos con un 95% de c
 
 ### 4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos.
 
+Nos interesa realizar un estudio de cómo se relacionan las variables para determinar si una persona sobrevive o no al hundimiento del Titanic. Para ello se hará uso de la variable dicotómica `survived`. Sería interesante analizar si existe asociación entre la variable dependiente `survived` y las variables explicativas que queramos usar de cara a la construcción del modelo predictivo de regresión logística.
+
+```{r}
+chisq.test(table(ds$survived, ds$gender))
+chisq.test(table(ds$survived, ds$age))
+chisq.test(table(ds$survived, ds$class))
+chisq.test(table(ds$survived, ds$embarked))
+chisq.test(table(ds$survived, ds$country))
+chisq.test(table(ds$survived, ds$fare))
+chisq.test(table(ds$survived, ds$sibsp))
+chisq.test(table(ds$survived, ds$parch))
+```
+
+Como podemos observar las variables `gender`, `class`, `embarked` afectan a la supervivencia tras el hundimiento del Titanic. Las variables `age`, `sibsp` y `parch` no parecen afectar a la supervivencia. Además en muchos tests parece que la aproximación parece no ser del todo correcta.
+
+Ahora bien, de estas variables que hemos detectado que pueden afectar a la supervivencia, vamos a analizar cómo se comportan a la hora de construir el modelo.
+
+```{r}
+model_gender <- glm(formula = ds$survived~factor(ds$gender), data = ds, family = binomial)
+summary(model_gender)
+```
+
+Vamos a calcular los OR para saber si su efecto sobre el modelo es un factor protector o no.
+```{r}
+exp(cbind(coef(model_gender), confint(model_gender)))
+```
+Por ejemplo, y curiosamente, en este caso parece ser que ser hombre tiene un factor protector en el modelo.
+
+Vamos a construir el modelo en función de todas las variable que consideramos afectan al modelo.
+```{r}
+model_gender_class_embarked <- glm(formula = ds$survived~factor(ds$gender)+factor(ds$class)+factor(ds$embarked), data = ds, family = binomial)
+summary(model_gender_class_embarked)
+```
+
+Se ve claramente cómo el género, la clase y el puerto de embarque afectan al modelo notablemente. Dejamos como pendiente crear un modelo con alguna variable descartada. Para comprobar que la decisión tomada fuera la correcta.
+
+No obstante, primero vamos a calcular los OR para todas las variables seleccionadas con el objetivo de saber si su efecto sobre el modelo es un factor protector o no.
+```{r}
+exp(cbind(coef(model_gender_class_embarked), confint(model_gender_class_embarked)))
+```
+
+Se destaca como factor dañino el valor **deck crew** para la variable `class`. Es decir, la tripulación de cubierta fue un factor dañino en la supervivencia en el Titanic. Le continúan como factores dañinos en la variable `embarked` los valores **C** (Cherbourg), **Q** (Queenstown), **S** (Southampton) en dicho orden.
+
+Por curiosidad vamos a crear un nuevo modelo con una de las variables anteriormente descartadas para observar su comportamiento.
+
+```{r}
+model_fail <- glm(formula = ds$survived~factor(ds$gender)+factor(ds$class)+factor(ds$embarked)+factor(ds$sibsp)+factor(ds$parch), data = ds, family = binomial)
+summary(model_fail)
+```
+
+Vemos cómo ha cambiado por completo el comportamiento del modelo. La variable `embarked` ha perdido su significancia y ya no influye en el modelo de la forma que anteriormente hacía. Además las nuevas variables agregadas `sibsp` y `parch` parece que no afectan prácticamente en el modelo.
+
+Podemos realizar el test de Hosman-Lemeshow para ver la bondad de ajuste.
+
+```{r}
+library(ResourceSelection)
+hoslem.test(ds$survived, fitted(model_gender_class_embarked))
+```
+
+Si nos fijamos en el p-value se acepta la hipótesis nula, por lo tanto, el modelo se ajusta adecuadamente.
+
+También podemos dibujar la curva **ROC** del modelo.
+```{r}
+# ROC se encuentra en el paquete pROC
+library(pROC)
+```
+
+```{r}
+r_c=roc(ds$survived, predict(model_gender_class_embarked, ds, type="response") , data=ds)
+plot(r_c)
+auc(r_c)
+```
+Vemos que el área debajo de la curva del modelo `model_gender_class_embarked` adquiere el valor de 0.7947 por lo tanto la capacidad del modelo para predecir supervivencia es bastante buena. Casi un 80%.
