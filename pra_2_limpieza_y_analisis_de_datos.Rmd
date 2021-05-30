@@ -3,8 +3,8 @@ title: "Tipología y ciclo de vida de los datos"
 author: 'Autores: Eleazar Morales Díaz y Susana Vila Melero'
 date: "5/6/2021"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 subtitle: 'PRÁCTICA 2: Limpieza y análisis de datos'
 ---
 
@@ -167,7 +167,7 @@ table(sort(boxplot.stats(ds$fare)$out))
 
 #### 3.2.3 Sibsp
 ```{r}
-#boxplot(ds$sibsp, ylab="SIBSP")
+boxplot(ds$sibsp, ylab="SIBSP")
 table(sort(boxplot.stats(ds$sibsp)$out))
 ```
 Recordemos, la variable `sibsp` indica número de esposas/hermanos a bordo. Por lo tanto si encontramos el valor **3** deberíamos encontrar valores múltiplos de 4 en el dataset.
@@ -177,7 +177,7 @@ Deducimos que la mayoría de pasajeros del titanic no viajaban ni con hermanos n
 
 #### 3.2.4 Parch
 ```{r}
-#boxplot(ds$parch, ylab="PARCH")
+boxplot(ds$parch, ylab="PARCH")
 table(sort(boxplot.stats(ds$parch)$out))
 ```
 En el caso de la variable `parch` es el número de padres/hijos a bordo. Tampoco vamos a eliminar los outliers pues parecen tener sentido. Observamos que la mayoría de pasajeros del Titanic no tenían ni padres ni hijos a bordo.
@@ -237,14 +237,14 @@ g4
 
 Una vez tenemos el dataset con las variables que necesitamos, seleccionaremos los grupos de datos que puede ser interesante analizar:
 
-
-
 * Pasajeros que hayan sobrevivido en función de la edad: **survived** y **age**/**ageD**
 * Pasajeros que hayan sobrevivido en función del genero: **survived** y **genre**
 * Pasajeros que hayan sobrevivido en función del puerto de embarque: **survived** y **embarked**
 * Pasajeros que hayan sobrevivido en función del país de origen: **survived** y **country**
 * Pasajeros que hayan sobrevivido en función de la clase: **survived** y **class**
-* Pasajeros que hayan sobrevivido en función del tamaño de la familia con la que viajaban: **Survived** y **family**
+* Pasajeros que hayan sobrevivido en función del número de familiares: **survived** y **sibsp**
+* Pasajeros que hayan sobrevivido en función del número de familiares: **survived** y **parch**
+* Pasajeros que hayan sobrevivido en función del tamaño de la familia con la que viajaban: **survived** y **family**
 * Categoría del billete en función del puerto de embarque: **class** y **embarked**
 * Categoría del billete en función del país de origen: **class** y **country**
 Con los datos anteriores, al llevar a cabo el análisis se verá si resulta de interés hacer alguna combinación de las variables anteriores
@@ -295,9 +295,10 @@ chisq.test(table(ds$survived, ds$country))
 chisq.test(table(ds$survived, ds$fare))
 chisq.test(table(ds$survived, ds$sibsp))
 chisq.test(table(ds$survived, ds$parch))
+chisq.test(table(ds$survived, ds$family))
 ```
 
-Como podemos observar las variables `gender`, `class`, `embarked` afectan a la supervivencia tras el hundimiento del Titanic. Las variables `age`, `sibsp` y `parch` no parecen afectar a la supervivencia. Además en muchos tests parece que la aproximación parece no ser del todo correcta.
+Como podemos observar las variables `gender`, `class`, `embarked` afectan a la supervivencia tras el hundimiento del Titanic. Las variables `age`, `sibsp`, `parch` y `family` no parecen afectar a la supervivencia. Además en muchos tests parece que la aproximación parece no ser del todo correcta.
 
 Ahora bien, de estas variables que hemos detectado que pueden afectar a la supervivencia, vamos a analizar cómo se comportan a la hora de construir el modelo.
 
@@ -336,6 +337,11 @@ summary(model_fail)
 
 Vemos cómo ha cambiado por completo el comportamiento del modelo. La variable `embarked` ha perdido su significancia y ya no influye en el modelo de la forma que anteriormente hacía. Además las nuevas variables agregadas `sibsp` y `parch` parece que no afectan prácticamente en el modelo.
 
+```{r}
+model_fail_family <- glm(formula = ds$survived~factor(ds$gender)+factor(ds$class)+factor(ds$embarked)+factor(ds$family), data = ds, family = binomial)
+summary(model_fail_family)
+```
+Observamos que si introducimos la variable `family` en el modelo, realmente pierde eficacia el modelo y vemos un comportamiento similar al obtenido cuando agregamos las variables `parch` y `sibsp`.
 Podemos realizar el test de Hosman-Lemeshow para ver la bondad de ajuste.
 
 ```{r}
@@ -357,3 +363,64 @@ plot(r_c)
 auc(r_c)
 ```
 Vemos que el área debajo de la curva del modelo `model_gender_class_embarked` adquiere el valor de 0.7947 por lo tanto la capacidad del modelo para predecir supervivencia es bastante buena. Casi un 80%.
+
+También queremos analizar la correlación existente entre la variables **class** y **embarked** y **class** y **country**. Para ello haremos uso de un mapa de calor.
+
+```{r}
+data_cor_class_embarked <- as.matrix(table(ds$class, ds$embarked))
+data_cor_class_country <- as.matrix(table(ds$class, ds$country))
+heatmap(data_cor_class_embarked)
+heatmap(data_cor_class_country)
+```
+Parece que existe una correlación entre el puerto de embarque **C** y ser de primera clase **1st**. Luego también se ve claramente una correlación entre el puerto de embarque en **B** y formar parte de la tripulación **victualling** y **deck**. Podemos decir que la correlación está siendo sesgada por el número de pasajeros que inician el viaje en **S**.
+
+En el caso del análisis con respecto al pais de origen se destaca el hecho de formar parte de primera clase siendo estadounidense.
+
+## 5. Representación de los resultados a partir de tablas y gráficas.
+
+A continuación mostramos todas las gráficas de aquellas variables que hemos analizado respecto a la supervicencia en el hundimiento del titanic:
+
+```{r}
+ggplot(ds,aes(x=gender,fill=survived))+geom_bar(position = "fill")+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Género")+ylab("Porcentaje")
+ggplot(ds,aes(x=ageD,fill=survived))+geom_bar(position = "fill")+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Edad")+ylab("Porcentaje")
+ggplot(ds,aes(x=class,fill=survived))+geom_bar(position = "fill")+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Clase")+ylab("Porcentaje")
+ggplot(ds,aes(x=embarked,fill=survived))+geom_bar(position = "fill")+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Embarque")+ylab("Porcentaje")
+ggplot(ds,aes(x=country,fill=survived))+geom_bar(position = "fill")+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("País")+ylab("Porcentaje")
+ggplot(ds,aes(x=sibsp,fill=survived))+geom_bar(position = "fill")+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("SIBSP")+ylab("Porcentaje")
+ggplot(ds,aes(x=parch,fill=survived))+geom_bar(position = "fill")+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("PARCH")+ylab("Porcentaje")
+ggplot(ds,aes(x=family,fill=survived))+geom_bar(position = "fill")+scale_fill_brewer(palette="Blues")+theme(aspect.ratio = 0.5)+ggtitle("Familia")+ylab("Porcentaje")
+```
+A continuación mostramos los mapas de calor generados que comparan la correlación entre la clase y el puerto de embarque así como el país de origen.
+
+```{r}
+heatmap(data_cor_class_embarked)
+heatmap(data_cor_class_country)
+```
+También se visualiza el resultado del modelo que mejor se comporta para los datos.
+```{r}
+plot(model_gender_class_embarked)
+```
+
+## 6. Resolución del problema.
+
+A partir de los resultados obtenidos y de las gráficas mostradas en el apartado anterior podemos afirmar lo siguiente:
+
+* Las variables que influyen de una forma estadísticamente significativa en las contrucción del modelo y por lo tanto en la supervivencia en el desastre histórico son `gender`, `class` y `embarked`.
+* Las variables  `age`, `sibsp`, `parch` y `family` no tienen gran impacto en la supervivencia.
+* Existe una correlación entre el puerto de embarque **C** y ser de primera clase **1st**.
+* Se ve claramente una correlación entre el puerto de embarque en **B** y formar parte de la tripulación **victualling** y **deck**. Aunque está siendo sesgada por la elevada proporción de pasajeros que inician el viaje en **S**.
+* Se encuentra que la mayoría de individuos de primera clase son estadounidenses.
+
+## 7. Exportar dataset resultante
+```{r}
+write.csv(ds, "./data/titanic_processed.csv", row.names = T)
+```
+
+
+## 8. Tabla contribuciones
+
+**Contribuciones** |**Firma** |
+----------------------| ----------------------|
+*Investigación Previa* | Eleazar Morales Díaz, Susana Vila Melero |
+*Redacción de las respuestas* | Eleazar Morales Díaz, Susana Vila Melero |
+*Desarrollo del código* | Eleazar Morales Díaz, Susana Vila Melero |
